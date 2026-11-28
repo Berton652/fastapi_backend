@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: onepoint
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: onepoint
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onepoint"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      ONEPOINT_SECRET_KEY: ${ONEPOINT_SECRET_KEY:?set ONEPOINT_SECRET_KEY}
+      ONEPOINT_DATABASE_URL: postgresql+psycopg://onepoint:${POSTGRES_PASSWORD}@db:5432/onepoint
+      ONEPOINT_ALLOW_SIMULATED_TOPUP: ${ONEPOINT_ALLOW_SIMULATED_TOPUP:-false}
+    ports: ["8000:8000"]
+
+volumes:
+  pgdata:
